@@ -28,9 +28,9 @@ void Config::LoadOrCreate() {
     std::wstring cfgPath = std::wstring(modPath) + L"\\" + CONFIG_NAME;
 
     if (!PathFileExistsW(cfgPath.c_str())) {
-        width = 200; height = 50; fontSize = 24;
-        initialAlpha = 192; displayTimeMs = 1500;
-        fadeIntervalMs = 30; alphaStep = 5;
+        width = 64; height = 32; fontSize = 24;
+        initialAlpha = 192; displayTimeMs = 100;
+        fadeIntervalMs = 5; alphaStep = 5;
         bgColor = L"#000000"; textColor = L"#FFFFFF";
         std::wofstream f(cfgPath);
         f << L"{\n"

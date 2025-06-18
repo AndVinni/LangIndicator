@@ -14,11 +14,13 @@ LangIndicator::LangIndicator(const Config* cfg)
 {
 }
 
-LangIndicator::~LangIndicator() {
+LangIndicator::~LangIndicator()
+{
     if (hwnd_) DestroyWindow(hwnd_);
 }
 
-bool LangIndicator::Init(HINSTANCE hInstance) {
+bool LangIndicator::Init(HINSTANCE hInstance)
+{
     hInst_ = hInstance;
     WNDCLASSW wc = {};
     wc.lpfnWndProc = WndProc;
@@ -42,15 +44,18 @@ bool LangIndicator::Init(HINSTANCE hInstance) {
     return true;
 }
 
-void LangIndicator::Run() {
+void LangIndicator::Run()
+{
     MSG msg;
-    while (GetMessageW(&msg, nullptr, 0, 0)) {
+    while (GetMessageW(&msg, nullptr, 0, 0))
+    {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
 }
 
-void LangIndicator::RegisterRawInput() {
+void LangIndicator::RegisterRawInput()
+{
     RAWINPUTDEVICE rid{ 0 };
     rid.usUsagePage = 0x01;
     rid.usUsage = 0x02;
@@ -59,7 +64,8 @@ void LangIndicator::RegisterRawInput() {
     RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
-void LangIndicator::ShowIndicator() {
+void LangIndicator::ShowIndicator()
+{
     UpdateLayout();
     currentAlpha_ = cfg_->initialAlpha;
     POINT pt; GetCursorPos(&pt);
@@ -72,21 +78,27 @@ void LangIndicator::ShowIndicator() {
     SetTimer(hwnd_, displayTimerId_, cfg_->displayTimeMs, nullptr);
 }
 
-void LangIndicator::UpdateLayout() {
+void LangIndicator::UpdateLayout()
+{
     wchar_t name[KL_NAMELENGTH] = {};
     if (GetKeyboardLayoutNameW(name)) currentLayout_ = name;
     else currentLayout_ = L"??";
 }
 
-LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
     auto self = reinterpret_cast<LangIndicator*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    switch (msg) {
-    case WM_INPUT: {
+    switch (msg)
+    {
+    case WM_INPUT:
+    {
         HRAWINPUT hRaw = reinterpret_cast<HRAWINPUT>(lp);
         UINT size = 0;
-        if (GetRawInputData(hRaw, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER)) == size) {
+        if (GetRawInputData(hRaw, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER)) == 0)
+        {
             std::vector<BYTE> buf(size);
-            if (GetRawInputData(hRaw, RID_INPUT, buf.data(), &size, sizeof(RAWINPUTHEADER)) == size) {
+            if (GetRawInputData(hRaw, RID_INPUT, buf.data(), &size, sizeof(RAWINPUTHEADER)) == size)
+            {
                 RAWINPUT* ri = reinterpret_cast<RAWINPUT*>(buf.data());
                 if (ri->header.dwType == RIM_TYPEMOUSE &&
                     (ri->data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN))
@@ -97,25 +109,32 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         }
         return 0;
     }
-    case WM_INPUTLANGCHANGE:
-        if (self) self->ShowIndicator();
-        return 0;
+    //case WM_INPUTLANGCHANGE:
+    //    self->currentLayout_= std::wstring(reinterpret_cast<LPCWSTR>(lp));
+    //    self->ShowIndicator();
+    //    return 0;
     case WM_SETTINGCHANGE:
-        if (lp && wcscmp(reinterpret_cast<LPCWSTR>(lp), L"intl") == 0)
-            if (self) self->ShowIndicator();
+        if (wp==0 && (lp && wcscmp(reinterpret_cast<LPCWSTR>(lp), L"intl") == 0))
+        {
+            //self->currentLayout_ = std::wstring(reinterpret_cast<LPCWSTR>(lp));
+            self->ShowIndicator();
+        }
         return 0;
     case WM_TIMER:
         if (!self) break;
-        if (wp == self->displayTimerId_) {
+        if (wp == self->displayTimerId_)
+        {
             KillTimer(hwnd, self->displayTimerId_);
             SetTimer(hwnd, self->fadeTimerId_, self->cfg_->fadeIntervalMs, nullptr);
         }
         else if (wp == self->fadeTimerId_) {
-            if (self->currentAlpha_ > self->cfg_->alphaStep) {
+            if (self->currentAlpha_ > self->cfg_->alphaStep)
+            {
                 self->currentAlpha_ -= self->cfg_->alphaStep;
                 SetLayeredWindowAttributes(hwnd, 0, self->currentAlpha_, LWA_ALPHA);
             }
-            else {
+            else
+            {
                 KillTimer(hwnd, self->fadeTimerId_);
                 ShowWindow(hwnd, SW_HIDE);
             }
