@@ -1,27 +1,19 @@
-// main.cpp — точка входа, регистрация автозагрузки и запуск цикла обработки событий
+// main.cpp — точка входа: автозапуск, загрузка конфигурации, запуск индикатора
 #include "config.h"
 #include "langindicator.h"
 #include <Windows.h>
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 {
-    // 1. Проверяем и создаём запись в автозагрузке
-    RegisterAutoRun();  // в config.cpp использует RegCreateKeyExW/RegSetValueExW
+    RegisterAutoRun();                    // автозапуск
 
-    // 2. Загружаем конфигурацию
-    Config cfg;
+    Config cfg;                           // конфигурация
     cfg.LoadOrCreate();
 
-    // 3. Инициализируем индикатор
-    LangIndicator indicator(&cfg);
-    indicator.Initialize(hInstance);
+    LangIndicator indicator(&cfg);       // передаём конфиг
+    if (!indicator.Init(hInstance))      // инициализация окна и Raw Input
+        return -1;
 
-    // 4. Запускаем цикл обработки сообщений Win32
-    MSG msg;
-    while (GetMessageW(&msg, nullptr, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-    }
+    indicator.Run();                      // цикл сообщений
     return 0;
 }
-

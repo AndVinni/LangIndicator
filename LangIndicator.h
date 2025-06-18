@@ -1,36 +1,28 @@
-// langindicator.h — объявление класса для отслеживания событий и отрисовки индикатора
 #pragma once
+#include <windows.h>
+#include <string>
 #include "config.h"
-#include <Windows.h>
 
-#define DISPLAY_TIMER_ID 1
-#define FADE_TIMER_ID 2
-
-class LangIndicator
-{
+class LangIndicator {
 public:
-    LangIndicator();
+    explicit LangIndicator(const Config* cfg);
     ~LangIndicator();
 
-    void Initialize(HINSTANCE hInstance);
+    bool Init(HINSTANCE hInstance);
     void Run();
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
 private:
-    const Config* cfg_;
+    const Config* cfg_;         // конфигурация
     HWND hwnd_;
-    HFONT font_;
-    HINSTANCE hInstance_;
+    HINSTANCE hInst_;
     UINT_PTR displayTimerId_;
     UINT_PTR fadeTimerId_;
-    int currentAlpha_;
-    int alphaStep_;
+    BYTE currentAlpha_;
     std::wstring currentLayout_;
-    int displayTimeMs_;
-    int fadeStepMs_;
 
+    void RegisterRawInput();
     void ShowIndicator();
-    void RegisterRawInput(HWND hwnd);
     void UpdateLayout();
 };

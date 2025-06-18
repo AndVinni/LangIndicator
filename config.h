@@ -1,20 +1,20 @@
+// config.h — работа с config.json и автозапуск
 #pragma once
 #include <string>
+#include <Windows.h>
 
-// Регистрирует приложение в автозагрузке (WinAPI Unicode)
 void RegisterAutoRun();
 
 struct Config {
     int width;
     int height;
     int fontSize;
-    int initialAlpha;
+    BYTE initialAlpha;
     int displayTimeMs;
-    int fadeTimeMs;
+    int fadeIntervalMs;
+    BYTE alphaStep;
     std::wstring bgColor;
     std::wstring textColor;
 
-    // Загружает или создаёт config.json
     void LoadOrCreate();
 };
-

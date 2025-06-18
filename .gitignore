@@ -9,8 +9,6 @@
 clang-format
 
 # Compiled Object files
-Setup/
-LED_SSD/
 x64/
 Win32/
 IconPrep/
