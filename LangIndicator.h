@@ -3,6 +3,8 @@
 #include <string>
 #include "config.h"
 
+COLORREF ParseHexColor(const std::wstring& hex);
+
 class LangIndicator {
 public:
     explicit LangIndicator(const Config* cfg);
@@ -17,7 +19,7 @@ private:
     const Config* cfg_;         // конфигурация
     HWND hwnd_;
     HINSTANCE hInst_;
-    UINT_PTR displayTimerId_;
+    enum class Phase { None, FadeIn, FadeOut } phase_;
     UINT_PTR fadeTimerId_;
     BYTE currentAlpha_;
     std::wstring currentLayout_;
@@ -25,4 +27,5 @@ private:
     void RegisterRawInput();
     void ShowIndicator();
     void UpdateLayout();
+    void OnTimer();
 };
