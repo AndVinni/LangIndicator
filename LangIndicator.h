@@ -3,6 +3,15 @@
 #include <string>
 #include "config.h"
 
+#include <windows.h>  // для HHOOK и KBDLLHOOKSTRUCT
+
+//#ifndef EVENT_SYSTEM_INPUTLANGCHANGE
+//#define EVENT_SYSTEM_INPUTLANGCHANGE 0x0015
+//#endif
+
+constexpr UINT WM_SHOW_INDICATOR = WM_APP + 1;
+
+
 COLORREF ParseHexColor(const std::wstring& hex);
 
 class LangIndicator {
@@ -14,6 +23,11 @@ public:
     void Run();
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+    void ShowIndicator();
+    void Render(HDC dc);
+    HWND GetHwnd() const { return hwnd_; }
+    void SetWaitingForClick() { waitingForClick_ = true; }
+
 
 private:
     const Config* cfg_;         // конфигурация
@@ -23,9 +37,16 @@ private:
     UINT_PTR fadeTimerId_;
     BYTE currentAlpha_;
     std::wstring currentLayout_;
+    bool waitingForClick_;
 
     void RegisterRawInput();
-    void ShowIndicator();
     void UpdateLayout();
     void OnTimer();
 };
+
+
+
+// Глобальная переменная для доступа из WinEventProc
+extern LangIndicator* g_instance;
+// Глобальный хук клавиатуры для ловли переключения языка
+extern HHOOK g_kbHook;

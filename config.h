@@ -4,13 +4,14 @@
 #include <Windows.h>
 
 void RegisterAutoRun();
+void UnregisterAutoRun();  // удаление из автозагрузки
 
 struct Config {
     int width;
     int height;
     int fontSize;
     BYTE initialAlpha;
-    int displayTimeMs;
+    /*int displayTimeMs;*/
     int fadeIntervalMs;
     BYTE alphaStep;
     std::wstring bgColor;

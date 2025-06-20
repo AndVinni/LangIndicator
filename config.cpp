@@ -29,16 +29,18 @@ void Config::LoadOrCreate() {
 
     if (!PathFileExistsW(cfgPath.c_str())) {
         width = 64; height = 32; fontSize = 24;
-        initialAlpha = 192; displayTimeMs = 100;
-        fadeIntervalMs = 5; alphaStep = 5;
+        initialAlpha = 128; /*displayTimeMs = 100;*/
+        fadeIntervalMs = 2; alphaStep = 5;
         bgColor = L"#000000"; textColor = L"#FFFFFF";
-        std::wofstream f(cfgPath);
+        std::wofstream f(cfgPath, std::ios::binary);
+        // Для удаления автозагрузки: langindicator.exe -u
+        f << L"//To delete auto-upload: langindicator.exe -u\n";
+
         f << L"{\n"
             << L"  \"width\": " << width << L",\n"
             << L"  \"height\": " << height << L",\n"
             << L"  \"fontSize\": " << fontSize << L",\n"
             << L"  \"initialAlpha\": " << initialAlpha << L",\n"
-            << L"  \"displayTimeMs\": " << displayTimeMs << L",\n"
             << L"  \"fadeIntervalMs\": " << fadeIntervalMs << L",\n"
             << L"  \"alphaStep\": " << alphaStep << L",\n"
             << L"  \"bgColor\": \"" << bgColor << L"\",\n"
@@ -56,9 +58,20 @@ void Config::LoadOrCreate() {
     height = getInt(L"\"height\"");
     fontSize = getInt(L"\"fontSize\"");
     initialAlpha = getByte(L"\"initialAlpha\"");
-    displayTimeMs = getInt(L"\"displayTimeMs\"");
     fadeIntervalMs = getInt(L"\"fadeIntervalMs\"");
     alphaStep = getByte(L"\"alphaStep\"");
     bgColor = getStr(L"\"bgColor\"");
     textColor = getStr(L"\"textColor\"");
 }
+
+// Удаляет запись из автозагрузки
+void UnregisterAutoRun()
+{
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS)
+    {
+        RegDeleteValueW(hKey, L"LangIndicator");
+        RegCloseKey(hKey);
+    }
+ }
+
