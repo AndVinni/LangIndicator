@@ -6,7 +6,8 @@
 void RegisterAutoRun();
 void UnregisterAutoRun();  // удаление из автозагрузки
 
-struct Config {
+struct Config
+{
     int width;
     int height;
     int fontSize;

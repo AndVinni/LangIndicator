@@ -216,7 +216,8 @@ void LangIndicator::UpdateLayout()
     }
 }
 
-void LangIndicator::OnTimer() {
+void LangIndicator::OnTimer()
+{
     if (phase_ == Phase::FadeIn) {
         if (currentAlpha_ + cfg_->alphaStep < cfg_->initialAlpha) {
             currentAlpha_ += cfg_->alphaStep;
@@ -316,10 +317,11 @@ static COLORREF ParseHexColor(const std::wstring& hex)
     if (hex.size() == 7 && hex[0] == L'#')
     {
         // Читаем по 2 символа
-        auto hexToByte = [&](int pos) {
+        auto hexToByte = [&](int pos)
+        {
             std::wstring part = hex.substr(pos, 2);
             return static_cast<BYTE>(std::stoul(part, nullptr, 16));
-            };
+        };
         BYTE r = hexToByte(1);
         BYTE g = hexToByte(3);
         BYTE b = hexToByte(5);

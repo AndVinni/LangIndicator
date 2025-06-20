@@ -8,7 +8,8 @@
 
 static const wchar_t* CONFIG_NAME = L"config.json";
 
-void RegisterAutoRun() {
+void RegisterAutoRun()
+{
     HKEY hKey;
     RegCreateKeyExW(HKEY_CURRENT_USER,
         L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
@@ -21,13 +22,15 @@ void RegisterAutoRun() {
     RegCloseKey(hKey);
 }
 
-void Config::LoadOrCreate() {
+void Config::LoadOrCreate()
+{
     wchar_t modPath[MAX_PATH];
     GetModuleFileNameW(nullptr, modPath, MAX_PATH);
     PathRemoveFileSpecW(modPath);
     std::wstring cfgPath = std::wstring(modPath) + L"\\" + CONFIG_NAME;
 
-    if (!PathFileExistsW(cfgPath.c_str())) {
+    if (!PathFileExistsW(cfgPath.c_str()))
+    {
         width = 64; height = 32; fontSize = 24;
         initialAlpha = 128; /*displayTimeMs = 100;*/
         fadeIntervalMs = 2; alphaStep = 5;
@@ -73,5 +76,5 @@ void UnregisterAutoRun()
         RegDeleteValueW(hKey, L"LangIndicator");
         RegCloseKey(hKey);
     }
- }
+}
 

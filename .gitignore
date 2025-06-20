@@ -7,6 +7,7 @@
 *.xlsx
 *.log
 *.txt
+*.cd
 clang-format
 
 # Compiled Object files

@@ -1,16 +1,9 @@
 #pragma once
-#include <windows.h>
+#include <windows.h> // для HHOOK и KBDLLHOOKSTRUCT
 #include <string>
 #include "config.h"
 
-#include <windows.h>  // для HHOOK и KBDLLHOOKSTRUCT
-
-//#ifndef EVENT_SYSTEM_INPUTLANGCHANGE
-//#define EVENT_SYSTEM_INPUTLANGCHANGE 0x0015
-//#endif
-
 constexpr UINT WM_SHOW_INDICATOR = WM_APP + 1;
-
 
 COLORREF ParseHexColor(const std::wstring& hex);
 
@@ -43,8 +36,6 @@ private:
     void UpdateLayout();
     void OnTimer();
 };
-
-
 
 // Глобальная переменная для доступа из WinEventProc
 extern LangIndicator* g_instance;
