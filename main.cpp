@@ -1,4 +1,10 @@
+// Utility for displaying the keyboard layout at the place where you enter text.
+// V2.2
+// Windows 11 C++ 20
+
+
 // main.cpp — entry point: autostart, load configuration, start indicator
+
 #include "config.h"
 #include "langindicator.h"
 #include <Windows.h>

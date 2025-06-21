@@ -1,4 +1,4 @@
-// config.cpp — реализация Config::LoadOrCreate и RegisterAutoRun
+// config.cpp — implementation of Config::LoadOrCreate and RegisterAutoRun
 #include "config.h"
 #include <Windows.h>
 #include <shlwapi.h>
@@ -7,18 +7,35 @@
 #pragma comment(lib, "shlwapi.lib")
 
 static const wchar_t* CONFIG_NAME = L"config.json";
+static const wchar_t* keyReg = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+static const wchar_t* subKey = L"LangIndicator";
 
 void RegisterAutoRun()
 {
     HKEY hKey;
-    RegCreateKeyExW(HKEY_CURRENT_USER,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-        0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr);
+    // 1) Open the autorun branch for recording
+    LSTATUS status = RegOpenKeyExW( HKEY_CURRENT_USER, keyReg, 0, KEY_WRITE, &hKey );
+    if (status != ERROR_SUCCESS)
+    {
+        // If we couldn't open it, we're leaving.
+        return;
+    }
+
+    // 2) Check if there is already a value named subKey
+    DWORD type = 0;
+    DWORD dataSize = 0;
+    status = RegQueryValueExW( hKey, subKey, nullptr, &type, nullptr, &dataSize );
+    if (status == ERROR_SUCCESS && type == REG_SZ) {
+        // Значение уже есть – ничего не делаем
+        RegCloseKey(hKey);
+        return;
+    }
+
+    // 3) There is no value - we create it
     wchar_t path[MAX_PATH];
     GetModuleFileNameW(nullptr, path, MAX_PATH);
-    RegSetValueExW(hKey, L"LangIndicator", 0, REG_SZ,
-        reinterpret_cast<const BYTE*>(path),
-        static_cast<DWORD>((wcslen(path) + 1) * sizeof(wchar_t)));
+    RegSetValueExW( hKey, subKey, 0, REG_SZ, reinterpret_cast<const BYTE*>(path), static_cast<DWORD>((wcslen(path) + 1) * sizeof(wchar_t)));
+    // 4) We close the key
     RegCloseKey(hKey);
 }
 
@@ -71,7 +88,7 @@ void Config::LoadOrCreate()
 void UnregisterAutoRun()
 {
     HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS)
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, keyReg, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS)
     {
         RegDeleteValueW(hKey, L"LangIndicator");
         RegCloseKey(hKey);
