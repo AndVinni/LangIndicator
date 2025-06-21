@@ -13,7 +13,7 @@ clang-format
 # Compiled Object files
 x64/
 Win32/
-IconPrep/
+LangIndicator/
 *.slo
 *.lo
 *.o

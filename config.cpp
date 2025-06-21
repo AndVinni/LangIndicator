@@ -25,7 +25,8 @@ void RegisterAutoRun()
     DWORD type = 0;
     DWORD dataSize = 0;
     status = RegQueryValueExW( hKey, subKey, nullptr, &type, nullptr, &dataSize );
-    if (status == ERROR_SUCCESS && type == REG_SZ) {
+    if (status == ERROR_SUCCESS && type == REG_SZ)
+    {
         // Значение уже есть – ничего не делаем
         RegCloseKey(hKey);
         return;

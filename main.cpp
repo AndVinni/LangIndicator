@@ -1,5 +1,5 @@
 // Utility for displaying the keyboard layout at the place where you enter text.
-// V2.2
+// V2.3
 // Windows 11, C++ 20
 // (C) Vinni, June 2025
 
@@ -24,7 +24,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
         MessageBoxExW(NULL, L"Application alredy run", L"Warning!", MB_OK, 0);
         return 1;
     }
-
 
     // Checking the "-u" key to remove from startup
     if (lpCmdLine && wcsstr(lpCmdLine, L"-u"))

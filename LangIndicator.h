@@ -7,7 +7,8 @@ constexpr UINT WM_SHOW_INDICATOR = WM_APP + 1;
 
 COLORREF ParseHexColor(const std::wstring& hex);
 
-class LangIndicator {
+class LangIndicator
+{
 public:
     explicit LangIndicator(const Config* cfg);
     ~LangIndicator();

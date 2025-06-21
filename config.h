@@ -3,7 +3,7 @@
 #include <string>
 #include <Windows.h>
 
-static const wchar_t* key;
+//const wchar_t* key;
 void RegisterAutoRun();
 void UnregisterAutoRun();  // remove from startup
 

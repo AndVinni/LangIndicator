@@ -10,7 +10,7 @@ static constexpr UINT_PTR FADE_TIMER_ID = 1;
 static constexpr UINT_PTR DELAY_TIMER_ID = 100;
 
 // Global low-level keyboard hook for tracking Alt+Shift/Ctrl+Shift
-static HHOOK g_kbHook = nullptr;
+extern HHOOK g_kbHook = nullptr;
 
 LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
 {
@@ -47,7 +47,7 @@ LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
                 if (g_instance && g_instance->GetHwnd())
                 {
                     g_instance->SetWaitingForClick();
-                    SetTimer(g_instance->GetHwnd(), DELAY_TIMER_ID, 200, nullptr);
+                    SetTimer(g_instance->GetHwnd(), DELAY_TIMER_ID, 300, nullptr);
                 }
             }
         }
@@ -94,14 +94,8 @@ bool LangIndicator::Init(HINSTANCE hInstance)
     wc.lpszClassName = L"LangIndicatorWindow";
     RegisterClassW(&wc);
 
-    hwnd_ = CreateWindowExW(
-        WS_EX_LAYERED | WS_EX_TOOLWINDOW,
-        wc.lpszClassName,
-        nullptr,
-        WS_POPUP,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        cfg_->width, cfg_->height,
-        nullptr, nullptr, hInst_, this);
+    hwnd_ = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOOLWINDOW, wc.lpszClassName, nullptr, WS_POPUP,CW_USEDEFAULT, CW_USEDEFAULT,
+                            cfg_->width, cfg_->height, nullptr, nullptr, hInst_, this);
     if (!hwnd_) return false;
 
     SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
@@ -112,7 +106,7 @@ bool LangIndicator::Init(HINSTANCE hInstance)
     // Installing a global WH_KEYBOARD_LL hook for Alt+Shift/Ctrl+Shift
     g_kbHook = SetWindowsHookExW(WH_KEYBOARD_LL,LowLevelKeyboard, hInst_, 0 );
     // optional: nullptr check
-    // if (!g_kbHook) { /* логируйте ошибку */ }
+    // if (!g_kbHook) { /* log the error */ }
     UpdateLayout();
     return true;
 }
@@ -217,20 +211,26 @@ void LangIndicator::UpdateLayout()
 
 void LangIndicator::OnTimer()
 {
-    if (phase_ == Phase::FadeIn) {
-        if (currentAlpha_ + cfg_->alphaStep < cfg_->initialAlpha) {
+    if (phase_ == Phase::FadeIn)
+    {
+        if (currentAlpha_ + cfg_->alphaStep < cfg_->initialAlpha)
+        {
             currentAlpha_ += cfg_->alphaStep;
         }
-        else {
+        else
+        {
             currentAlpha_ = cfg_->initialAlpha;
             phase_ = Phase::FadeOut;
         }
     }
-    else if (phase_ == Phase::FadeOut) {
-        if (currentAlpha_ > cfg_->alphaStep) {
+    else if (phase_ == Phase::FadeOut)
+    {
+        if (currentAlpha_ > cfg_->alphaStep)
+        {
             currentAlpha_ -= cfg_->alphaStep;
         }
-        else {
+        else
+        {
             KillTimer(hwnd_, fadeTimerId_);
             ShowWindow(hwnd_, SW_HIDE);
             phase_ = Phase::None;
@@ -256,11 +256,9 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
             if (GetRawInputData(hRaw, RID_INPUT, buf.data(), &size, sizeof(RAWINPUTHEADER)) == size)
             {
                 RAWINPUT* ri = reinterpret_cast<RAWINPUT*>(buf.data());
-                if (ri->header.dwType == RIM_TYPEMOUSE &&
-                    (ri->data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN))
+                if (ri->header.dwType == RIM_TYPEMOUSE && (ri->data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN))
                 {
-                    // Show only the first click after changing the layout
-                    if (self->waitingForClick_)
+                    if (self && self->waitingForClick_)
                     {
                         self->waitingForClick_ = false;
                         PostMessageW(self->hwnd_, WM_SHOW_INDICATOR, 0, 0);
@@ -272,45 +270,52 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     }
 
     case WM_TIMER:
-        if (!self) break;
-
-        // Delayed display after switching layouts
-        if (wp == DELAY_TIMER_ID) {
-            KillTimer(self->hwnd_, DELAY_TIMER_ID);
-            self->ShowIndicator();
-            return 0;
-        }
-
-        // Fade-in/fade-out phase
-        if (wp == self->fadeTimerId_) {
-            self->OnTimer();
-            return 0;
+        if (self)
+        {
+            if (wp == DELAY_TIMER_ID)
+            {
+                KillTimer(self->hwnd_, DELAY_TIMER_ID);
+                self->ShowIndicator();
+                return 0;
+            }
+            if (wp == self->fadeTimerId_)
+            {
+                self->OnTimer();
+                return 0;
+            }
         }
         break;
+
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC dc = BeginPaint(hwnd, &ps);
-        // We delegate all the rendering
-        self->Render(dc);
+        if (self)
+            self->Render(dc);
         EndPaint(hwnd, &ps);
         return 0;
     }
+
     case WM_SHOW_INDICATOR:
+        if (self)
+        {
+            self->ShowIndicator();
+            return 0;
+        }
+        break;
 
-        self->ShowIndicator();
-
-    return 0;
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
+
     default:
-        return DefWindowProcW(hwnd, msg, wp, lp);
+        break;
     }
+    return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
 // Color parser from "#RRGGBB" format strings to COLORREF
-static COLORREF ParseHexColor(const std::wstring& hex)
+extern COLORREF ParseHexColor(const std::wstring& hex)
 {
     if (hex.size() == 7 && hex[0] == L'#')
     {
