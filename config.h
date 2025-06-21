@@ -1,10 +1,10 @@
-// config.h — работа с config.json и автозапуск
+// config.h — working with config.json and autorun
 #pragma once
 #include <string>
 #include <Windows.h>
 
 void RegisterAutoRun();
-void UnregisterAutoRun();  // удаление из автозагрузки
+void UnregisterAutoRun();  // remove from startup
 
 struct Config
 {

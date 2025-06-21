@@ -36,7 +36,7 @@ void Config::LoadOrCreate()
         fadeIntervalMs = 2; alphaStep = 5;
         bgColor = L"#000000"; textColor = L"#FFFFFF";
         std::wofstream f(cfgPath, std::ios::binary);
-        // Для удаления автозагрузки: langindicator.exe -u
+        // To remove startup: langindicator.exe -u
         f << L"//To delete auto-upload: langindicator.exe -u\n";
 
         f << L"{\n"
@@ -51,7 +51,7 @@ void Config::LoadOrCreate()
             << L"}\n";
         return;
     }
-    // простой парсинг
+    // simple parsing
     std::wifstream f(cfgPath);
     std::wstringstream ss; ss << f.rdbuf(); std::wstring s = ss.str();
     auto getInt = [&](std::wstring key) { size_t p = s.find(key); if (p == std::wstring::npos) return 0; return _wtoi(s.c_str() + s.find(L":", p) + 1); };
@@ -67,7 +67,7 @@ void Config::LoadOrCreate()
     textColor = getStr(L"\"textColor\"");
 }
 
-// Удаляет запись из автозагрузки
+// Removes an entry from startup
 void UnregisterAutoRun()
 {
     HKEY hKey;

@@ -1,5 +1,5 @@
 #pragma once
-#include <windows.h> // для HHOOK и KBDLLHOOKSTRUCT
+#include <windows.h> // for HHOOK and KBDLLHOOKSTRUCT
 #include <string>
 #include "config.h"
 
@@ -23,7 +23,7 @@ public:
 
 
 private:
-    const Config* cfg_;         // конфигурация
+    const Config* cfg_;         // configuration
     HWND hwnd_;
     HINSTANCE hInst_;
     enum class Phase { None, FadeIn, FadeOut } phase_;
@@ -37,7 +37,7 @@ private:
     void OnTimer();
 };
 
-// Глобальная переменная для доступа из WinEventProc
+// Global variable for access from WinEventProc
 extern LangIndicator* g_instance;
-// Глобальный хук клавиатуры для ловли переключения языка
+// Global keyboard hook for catching language switching
 extern HHOOK g_kbHook;

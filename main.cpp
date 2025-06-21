@@ -1,4 +1,4 @@
-// main.cpp — точка входа: автозапуск, загрузка конфигурации, запуск индикатора
+// main.cpp — entry point: autostart, load configuration, start indicator
 #include "config.h"
 #include "langindicator.h"
 #include <Windows.h>
@@ -6,22 +6,22 @@
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
 {
-    // Проверка ключа "-u" для удаления из автозагрузки
+    // Checking the "-u" key to remove from startup
     if (lpCmdLine && wcsstr(lpCmdLine, L"-u"))
     {
         UnregisterAutoRun();
         return 0;
     }
-    RegisterAutoRun();                    // автозапуск
+    RegisterAutoRun();                    // autostart
 
-    Config cfg;                           // конфигурация
+    Config cfg;                           // configuration
     cfg.LoadOrCreate();
 
-    LangIndicator indicator(&cfg);       // передаём конфиг
+    LangIndicator indicator(&cfg);       // we transfer the config
     g_instance = &indicator;
-    if (!indicator.Init(hInstance))      // инициализация окна и Raw Input
+    if (!indicator.Init(hInstance))      // Window Initialization and Raw Input
         return -1;
 
-    indicator.Run();                      // цикл сообщений
+    indicator.Run();                      // message cycle
     return 0;
 }

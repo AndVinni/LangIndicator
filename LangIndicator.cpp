@@ -3,19 +3,18 @@
 #include <string>
 
 
-// Глобальная переменная для доступа из WinEventProc
+// Global variable for access from WinEventProc
 LangIndicator* g_instance = nullptr;
 
 static constexpr UINT_PTR FADE_TIMER_ID = 1;
 static constexpr UINT_PTR DELAY_TIMER_ID = 100;
 
-// ---------------------------------------------------------------------------+
-// Глобальный низкоуровневый клавиатурный хук для отслеживания Alt+Shift/Ctrl+Shift
+// Global low-level keyboard hook for tracking Alt+Shift/Ctrl+Shift
 static HHOOK g_kbHook = nullptr;
 
 LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
 {
-    // Низкоуровневый клавиатурный хук: отслеживаем Ctrl, Alt и реагируем на Shift+Alt или Shift+Ctrl
+    // Low-level keyboard hook: track Ctrl, Alt and react to Shift+Alt or Shift+Ctrl
     static bool altDown = false;
     static bool ctrlDown = false;
 
@@ -23,7 +22,7 @@ LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
     {
         auto k = reinterpret_cast<KBDLLHOOKSTRUCT*>(lp);
 
-        // Обновляем состояние Alt и Ctrl
+        // Update the state of Alt and Ctrl
         if (wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN)
         {
             if (k->vkCode == VK_LMENU || k->vkCode == VK_RMENU)
@@ -39,7 +38,7 @@ LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
                 ctrlDown = false;
         }
 
-        // При нажатии Shift проверяем комбинацию
+        // When pressing Shift we check the combination
         if ((wp == WM_KEYDOWN || wp == WM_SYSKEYDOWN) &&
             (k->vkCode == VK_SHIFT || k->vkCode == VK_LSHIFT || k->vkCode == VK_RSHIFT))
         {
@@ -88,7 +87,7 @@ bool LangIndicator::Init(HINSTANCE hInstance)
     hInst_ = hInstance;
 
     WNDCLASSW wc = {};
-    // Отключаем фоновую заливку, чтобы не было белой рамки
+    // Turn off the background fill so that there is no white frame
     wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(NULL_BRUSH));
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInst_;
@@ -107,12 +106,12 @@ bool LangIndicator::Init(HINSTANCE hInstance)
 
     SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     HRGN rgn = CreateRoundRectRgn(0, 0, cfg_->width + 1, cfg_->height + 1, 20, 20);
-    SetWindowRgn(hwnd_, rgn, TRUE); // hwnd_ — ваш дескриптор окна
+    SetWindowRgn(hwnd_, rgn, TRUE); // hwnd_ — your window handle
     ShowWindow(hwnd_, SW_HIDE);
     RegisterRawInput();
-    // Устанавливаем глобальный WH_KEYBOARD_LL‑хук для Alt+Shift/Ctrl+Shift
+    // Installing a global WH_KEYBOARD_LL hook for Alt+Shift/Ctrl+Shift
     g_kbHook = SetWindowsHookExW(WH_KEYBOARD_LL,LowLevelKeyboard, hInst_, 0 );
-    // необязательно: проверка на nullptr
+    // optional: nullptr check
     // if (!g_kbHook) { /* логируйте ошибку */ }
     UpdateLayout();
     return true;
@@ -148,10 +147,10 @@ void LangIndicator::ShowIndicator()
     GetCursorPos(&pt);
     SetWindowPos(hwnd_, HWND_TOPMOST, pt.x, pt.y, cfg_->width, cfg_->height, SWP_NOACTIVATE);
 
-    // Устанавливаем начальную прозрачность
+    // Set the initial transparency
     SetLayeredWindowAttributes(hwnd_, 0, currentAlpha_, LWA_ALPHA);
 
-    // Показываем окно и инвалидируем для WM_PAINT
+    // Show the window and disable it for WM_PAINT
     ShowWindow(hwnd_, SW_SHOWNA);
     InvalidateRect(hwnd_, nullptr, TRUE);
 
@@ -161,7 +160,7 @@ void LangIndicator::ShowIndicator()
 
 void LangIndicator::Render(HDC dc)
 {
-    // 1. Заливаем фон закруглённого прямоугольника
+    // 1. Fill the background of the rounded rectangle
     RECT rc;
     GetClientRect(hwnd_, &rc);
     HBRUSH hbr = CreateSolidBrush(ParseHexColor(cfg_->bgColor));
@@ -172,7 +171,7 @@ void LangIndicator::Render(HDC dc)
     DeleteObject(hbr);
     SelectObject(dc, hPen);
 
-    // 2. Рисуем текст
+    // 2. Draw text
     HFONT font = CreateFontW(cfg_->fontSize, 0, 0, 0, FW_NORMAL, 0, 0, 0,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
         CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
@@ -188,31 +187,31 @@ void LangIndicator::Render(HDC dc)
 
 void LangIndicator::UpdateLayout()
 {
-    // 1. Обновляем раскладку целевого потока
+    // 1. Updating the target flow layout
     POINT pt;
     GetCursorPos(&pt);
 
     HWND hwndTarget = GetForegroundWindow();
     DWORD threadId = GetWindowThreadProcessId(hwndTarget, nullptr);
  
-    // Получаем HKL для того потока
+    // We get HKL for that thread
     HKL hkl = GetKeyboardLayout(threadId);
 
-    // Из него извлекаем LANGID
+    // We extract LANGID from it
     LANGID langId = LOWORD(reinterpret_cast<ULONG_PTR>(hkl));
 
-    // Переводим LANGID в строковый код локали, например "ru-RU"
+    // Convert LANGID to locale string code, for example "en-EN"
     WCHAR localeName[LOCALE_NAME_MAX_LENGTH] = {};
     if (LCIDToLocaleName(MAKELCID(langId, SORT_DEFAULT), localeName, LOCALE_NAME_MAX_LENGTH, 0))
     {
-        // Получить короткий код ("RU"), берём первые две буквы после дефиса:
+        // To get a short code ("EN"), take the first two letters after the hyphen:
         std::wstring s(localeName);
         auto pos = s.find(L'-');
         std::wstring primary = s.substr(0, pos);
-        // primary теперь L"ru" — можно привести к верхнему регистру: RU
+        // primary is now L"en" — can be converted to uppercase: EN
         for (auto& c : primary)
             c = towupper(c);
-        currentLayout_ = primary; // primary == L"RU"
+        currentLayout_ = primary; // primary == L"EN"
     }
 }
 
@@ -260,8 +259,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
                 if (ri->header.dwType == RIM_TYPEMOUSE &&
                     (ri->data.mouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN))
                 {
-                    //self->ShowIndicator();
-                    // Показываем только первый клик после смены раскладки
+                    // Show only the first click after changing the layout
                     if (self->waitingForClick_)
                     {
                         self->waitingForClick_ = false;
@@ -276,14 +274,14 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     case WM_TIMER:
         if (!self) break;
 
-        // Отложенный показ после переключения раскладки
+        // Delayed display after switching layouts
         if (wp == DELAY_TIMER_ID) {
             KillTimer(self->hwnd_, DELAY_TIMER_ID);
             self->ShowIndicator();
             return 0;
         }
 
-        // Фаза fade‑in/fade‑out
+        // Fade-in/fade-out phase
         if (wp == self->fadeTimerId_) {
             self->OnTimer();
             return 0;
@@ -293,7 +291,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     {
         PAINTSTRUCT ps;
         HDC dc = BeginPaint(hwnd, &ps);
-        // Делегируем всю отрисовку
+        // We delegate all the rendering
         self->Render(dc);
         EndPaint(hwnd, &ps);
         return 0;
@@ -311,12 +309,12 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     }
 }
 
-// Парсер цвета из строк формата "#RRGGBB" в COLORREF
+// Color parser from "#RRGGBB" format strings to COLORREF
 static COLORREF ParseHexColor(const std::wstring& hex)
 {
     if (hex.size() == 7 && hex[0] == L'#')
     {
-        // Читаем по 2 символа
+        // We read 2 symbols at a time
         auto hexToByte = [&](int pos)
         {
             std::wstring part = hex.substr(pos, 2);
@@ -327,6 +325,6 @@ static COLORREF ParseHexColor(const std::wstring& hex)
         BYTE b = hexToByte(5);
         return RGB(r, g, b);
     }
-    // Фолбэк — чёрный
+    // Foulback - black
     return RGB(0, 0, 0);
 }
