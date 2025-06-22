@@ -9,8 +9,8 @@
 LangIndicator* g_instance = nullptr;
 
 static constexpr UINT_PTR FADE_TIMER_ID = 1;
-static constexpr UINT_PTR DELAY_TIMER_ID = 100; // отложенный старт
-static constexpr UINT_PTR CARET_FADE_TIMER_ID = 101;  // анимация у каретки
+static constexpr UINT_PTR DELAY_TIMER_ID = 100; // delayed start
+static constexpr UINT_PTR CARET_FADE_TIMER_ID = 101;  // animation at the caret
 
 // Global low-level keyboard hook for tracking Alt+Shift/Ctrl+Shift
 extern HHOOK g_kbHook = nullptr;
@@ -154,7 +154,7 @@ void LangIndicator::ShowIndicator()
     ShowWindow(hwnd_, SW_SHOWNA);
     InvalidateRect(hwnd_, nullptr, TRUE);
 
-    // Стартуем таймер
+    // Let's start the timer
     SetTimer(hwnd_, fadeTimerId_, cfg_->fadeIntervalMs, nullptr);
 }
 
@@ -217,7 +217,7 @@ void LangIndicator::UpdateLayout()
 
 void LangIndicator::OnTimer()
 {
-    // общий алгоритм fade-in → fade-out, одинаков для обоих окон
+    // general algorithm fade-in → fade-out, the same for both windows
     if (phase_ == Phase::FadeIn)
     {
         if (currentAlpha_ + cfg_->alphaStep < cfg_->initialAlpha)
@@ -238,7 +238,7 @@ void LangIndicator::OnTimer()
         }
         else
         {
-            // останавливаем оба таймера сразу
+            // stop both timers at once
             KillTimer(hwnd_, fadeTimerId_);
             KillTimer(hwnd_, caretFadeTimerId_);
             ShowWindow(hwnd_, SW_HIDE);
@@ -255,7 +255,6 @@ __declspec(noinline)
 
 void LangIndicator::ShowIndicatorAtCaret()
 {
-    //__debugbreak();
     UpdateLayout();
     currentAlpha_ = 0;
     phase_ = Phase::FadeIn;
@@ -334,20 +333,20 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 
     case WM_TIMER:
         if (self)
-        {   // 1) отложенный запуск окна у каретки
+        {   // 1) delayed window launch at the caret
             if (wp == DELAY_TIMER_ID)
             {
                 KillTimer(self->hwnd_, DELAY_TIMER_ID);
                 self->ShowIndicatorAtCaret();
                 return 0;
             }
-            // 2) анимация обычного окна под мышью
+            // 2) animation of a normal window under the mouse
             if (wp == self->fadeTimerId_)
             {
                 self->OnTimer();
                 return 0;
             }
-            // 3) анимация окна у каретки
+            // 3) window animation at the caret
             if (wp == self->caretFadeTimerId_)
             {
                 self->OnTimer();
