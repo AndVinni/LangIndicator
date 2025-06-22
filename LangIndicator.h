@@ -7,6 +7,7 @@ constexpr UINT WM_SHOW_INDICATOR = WM_APP + 1;
 
 COLORREF ParseHexColor(const std::wstring& hex);
 
+
 class LangIndicator
 {
 public:
@@ -18,6 +19,7 @@ public:
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
     void ShowIndicator();
+    void ShowIndicatorAtCaret();
     void Render(HDC dc);
     HWND GetHwnd() const { return hwnd_; }
     void SetWaitingForClick() { waitingForClick_ = true; }
@@ -28,7 +30,8 @@ private:
     HWND hwnd_;
     HINSTANCE hInst_;
     enum class Phase { None, FadeIn, FadeOut } phase_;
-    UINT_PTR fadeTimerId_;
+    UINT_PTR fadeTimerId_; // for the main window (mouse)
+    UINT_PTR caretFadeTimerId_;   // for the window at the carriage
     BYTE currentAlpha_;
     std::wstring currentLayout_;
     bool waitingForClick_;
@@ -36,6 +39,8 @@ private:
     void RegisterRawInput();
     void UpdateLayout();
     void OnTimer();
+    // returns the screen coordinates of the caret or {0,0}
+    POINT FindCaretPosition();
 };
 
 // Global variable for access from WinEventProc

@@ -62,6 +62,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
 
     RegisterAutoRun();                    // autostart
 
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
     Config cfg;                           // configuration
     cfg.LoadOrCreate();
 

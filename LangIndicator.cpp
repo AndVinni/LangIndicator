@@ -1,16 +1,20 @@
 #include "langindicator.h"
 #include <vector>
 #include <string>
+#include <Shellscalingapi.h >
+#pragma comment(lib, "Shcore.lib")
 
 
 // Global variable for access from WinEventProc
 LangIndicator* g_instance = nullptr;
 
 static constexpr UINT_PTR FADE_TIMER_ID = 1;
-static constexpr UINT_PTR DELAY_TIMER_ID = 100;
+static constexpr UINT_PTR DELAY_TIMER_ID = 100; // отложенный старт
+static constexpr UINT_PTR CARET_FADE_TIMER_ID = 101;  // анимация у каретки
 
 // Global low-level keyboard hook for tracking Alt+Shift/Ctrl+Shift
 extern HHOOK g_kbHook = nullptr;
+
 
 LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
 {
@@ -62,9 +66,11 @@ LangIndicator::LangIndicator(const Config* cfg)
     , hwnd_(nullptr)
     , hInst_(nullptr)
     , fadeTimerId_(FADE_TIMER_ID)
+    , caretFadeTimerId_(CARET_FADE_TIMER_ID)
     , phase_(Phase::None)
     , currentAlpha_(0)
     , waitingForClick_(true)
+
 {
 }
 
@@ -211,6 +217,7 @@ void LangIndicator::UpdateLayout()
 
 void LangIndicator::OnTimer()
 {
+    // общий алгоритм fade-in → fade-out, одинаков для обоих окон
     if (phase_ == Phase::FadeIn)
     {
         if (currentAlpha_ + cfg_->alphaStep < cfg_->initialAlpha)
@@ -231,7 +238,9 @@ void LangIndicator::OnTimer()
         }
         else
         {
+            // останавливаем оба таймера сразу
             KillTimer(hwnd_, fadeTimerId_);
+            KillTimer(hwnd_, caretFadeTimerId_);
             ShowWindow(hwnd_, SW_HIDE);
             phase_ = Phase::None;
             return;
@@ -240,6 +249,60 @@ void LangIndicator::OnTimer()
     SetLayeredWindowAttributes(hwnd_, 0, currentAlpha_, LWA_ALPHA);
 }
 
+#ifdef _MSC_VER
+__declspec(noinline)
+#endif
+
+void LangIndicator::ShowIndicatorAtCaret()
+{
+    //__debugbreak();
+    UpdateLayout();
+    currentAlpha_ = 0;
+    phase_ = Phase::FadeIn;
+    
+    // 1) get the screen position of the caret
+    POINT pt = this->FindCaretPosition();
+    // 2) position the window near the carriage
+    SetWindowPos(hwnd_, HWND_TOPMOST, pt.x, pt.y, cfg_->width, cfg_->height, SWP_NOACTIVATE);
+    
+    // 3) we start the animation in the same way as ShowIndicator()
+    SetLayeredWindowAttributes(hwnd_, 0, currentAlpha_, LWA_ALPHA);
+    ShowWindow(hwnd_, SW_SHOWNA);
+    InvalidateRect(hwnd_, nullptr, TRUE);
+    UpdateWindow(hwnd_);
+    SetTimer(hwnd_, caretFadeTimerId_, cfg_->fadeIntervalMs, nullptr);
+ }
+
+#ifdef _MSC_VER
+__declspec(noinline)
+#endif
+
+POINT LangIndicator::FindCaretPosition()
+{
+    // Let's try to get the caret window via GUIThreadInfo
+    GUITHREADINFO gi{ sizeof(gi) };
+    // Get the DPI of the current monitor
+    UINT dpiX = 96; UINT dpiY = 96;
+    HWND fg = GetForegroundWindow();
+    HMONITOR hMon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
+    if (hMon)
+    {
+        // Using a modern API for precise DPI
+        GetDpiForMonitor(hMon, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+    }
+
+    if (GetGUIThreadInfo(0, &gi) && gi.hwndCaret)
+    {
+        int x = gi.rcCaret.left;
+        int y = gi.rcCaret.top;
+        POINT pt = { x, y };
+        ClientToScreen(gi.hwndCaret, &pt);
+        // Converting logical coordinates to physical ones
+        pt.x = MulDiv(pt.x, dpiX, dpiX );
+        pt.y = MulDiv(pt.y, dpiX, dpiX );
+        return pt;
+    }
+}
 
 LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -271,14 +334,21 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 
     case WM_TIMER:
         if (self)
-        {
+        {   // 1) отложенный запуск окна у каретки
             if (wp == DELAY_TIMER_ID)
             {
                 KillTimer(self->hwnd_, DELAY_TIMER_ID);
-                self->ShowIndicator();
+                self->ShowIndicatorAtCaret();
                 return 0;
             }
+            // 2) анимация обычного окна под мышью
             if (wp == self->fadeTimerId_)
+            {
+                self->OnTimer();
+                return 0;
+            }
+            // 3) анимация окна у каретки
+            if (wp == self->caretFadeTimerId_)
             {
                 self->OnTimer();
                 return 0;
@@ -333,3 +403,4 @@ extern COLORREF ParseHexColor(const std::wstring& hex)
     // Foulback - black
     return RGB(0, 0, 0);
 }
+
