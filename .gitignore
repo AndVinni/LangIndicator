@@ -44,3 +44,5 @@ LangIndicator/
 *.exe
 *.out
 *.app
+.env
+GEMINI.md
