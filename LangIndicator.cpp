@@ -261,6 +261,16 @@ void LangIndicator::ShowIndicatorAtCaret()
     
     // 1) get the screen position of the caret
     POINT pt = this->FindCaretPosition();
+    
+    // If we got zero coordinates, use center of the screen
+    if (pt.x == 0 && pt.y == 0)
+    {
+        int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+        int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        pt.x = (screenWidth - cfg_->width) / 2;
+        pt.y = (screenHeight - cfg_->height) / 2;
+    }
+    
     // 2) position the window near the carriage
     SetWindowPos(hwnd_, HWND_TOPMOST, pt.x, pt.y, cfg_->width, cfg_->height, SWP_NOACTIVATE);
     
@@ -280,27 +290,24 @@ POINT LangIndicator::FindCaretPosition()
 {
     // Let's try to get the caret window via GUIThreadInfo
     GUITHREADINFO gi{ sizeof(gi) };
-    // Get the DPI of the current monitor
-    UINT dpiX = 96; UINT dpiY = 96;
-    HWND fg = GetForegroundWindow();
-    HMONITOR hMon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
-    if (hMon)
-    {
-        // Using a modern API for precise DPI
-        GetDpiForMonitor(hMon, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
-    }
 
     if (GetGUIThreadInfo(0, &gi) && gi.hwndCaret)
     {
-        int x = gi.rcCaret.left;
-        int y = gi.rcCaret.top;
-        POINT pt = { x, y };
-        ClientToScreen(gi.hwndCaret, &pt);
-        // Converting logical coordinates to physical ones
-        pt.x = MulDiv(pt.x, dpiX, dpiX );
-        pt.y = MulDiv(pt.y, dpiX, dpiX );
+        RECT caretRect = gi.rcCaret;
+        
+        // MapWindowPoints is generally more reliable than ClientToScreen.
+        // It converts the caret rectangle from the client coordinates of the
+        // caret's window to screen coordinates.
+        MapWindowPoints(gi.hwndCaret, HWND_DESKTOP, (LPPOINT)&caretRect, 2);
+
+        // Position the indicator's top-left corner at the bottom-left of the caret,
+        // which is a common placement for IMEs and similar UI elements.
+        POINT pt = { caretRect.left, caretRect.bottom };
         return pt;
     }
+    
+    // Return zero point if we can't get caret position
+    return { 0, 0 };
 }
 
 LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
