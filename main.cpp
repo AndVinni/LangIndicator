@@ -72,6 +72,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
     if (!indicator.Init(hInstance))      // Window Initialization and Raw Input
         return -1;
 
+    indicator.ShowIndicatorAtCaret();     // show indicator at startup
     indicator.Run();                      // message cycle
     return 0;
 }
