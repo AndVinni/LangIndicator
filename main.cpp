@@ -60,7 +60,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
         return 1;
     }
 
-    RegisterAutoRun();                    // autostart
+
 
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
@@ -71,6 +71,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
     g_instance = &indicator;
     if (!indicator.Init(hInstance))      // Window Initialization and Raw Input
         return -1;
+
+    RegisterAutoRun();                    // autostart
 
     indicator.ShowIndicatorAtCaret();     // show indicator at startup
     indicator.Run();                      // message cycle
