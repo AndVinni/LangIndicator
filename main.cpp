@@ -74,6 +74,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int)
 
     RegisterAutoRun();                    // autostart
 
+    // Wait for the shell (taskbar) to be ready, this is important for autorun
+    while (FindWindowW(L"Shell_TrayWnd", NULL) == NULL)
+    {
+        Sleep(1000);
+    }
+
     indicator.ShowIndicatorAtCaret();     // show indicator at startup
     indicator.Run();                      // message cycle
     return 0;
