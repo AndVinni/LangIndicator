@@ -35,6 +35,7 @@ private:
     BYTE currentAlpha_;
     std::wstring currentLayout_;
     bool waitingForClick_;
+    UINT taskbarCreatedMsg_;    // Message ID for TaskbarCreated
 
     void RegisterRawInput();
     void UpdateLayout();

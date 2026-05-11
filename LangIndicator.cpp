@@ -70,6 +70,7 @@ LangIndicator::LangIndicator(const Config* cfg)
     , phase_(Phase::None)
     , currentAlpha_(0)
     , waitingForClick_(true)
+    , taskbarCreatedMsg_(0)
 
 {
 }
@@ -114,6 +115,7 @@ bool LangIndicator::Init(HINSTANCE hInstance)
     // optional: nullptr check
     // if (!g_kbHook) { /* log the error */ }
     UpdateLayout();
+    taskbarCreatedMsg_ = RegisterWindowMessageW(L"TaskbarCreated");
     return true;
 }
 
@@ -313,6 +315,11 @@ POINT LangIndicator::FindCaretPosition()
 LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     auto self = reinterpret_cast<LangIndicator*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    if (self && msg == self->taskbarCreatedMsg_)
+    {
+        self->ShowIndicatorAtCaret();
+        return 0;
+    }
     switch (msg)
     {
     case WM_INPUT:
