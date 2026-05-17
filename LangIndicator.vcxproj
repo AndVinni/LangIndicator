@@ -133,10 +133,12 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="LangIndicator.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h" />
     <ClInclude Include="LangIndicator.h" />
+    <ClInclude Include="logger.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

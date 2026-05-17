@@ -1,4 +1,5 @@
 #include "langindicator.h"
+#include "logger.h"
 #include <vector>
 #include <string>
 #include <Shellscalingapi.h >
@@ -48,6 +49,7 @@ LRESULT CALLBACK LowLevelKeyboard(int nCode, WPARAM wp, LPARAM lp)
         {
             if (altDown || ctrlDown)
             {
+                Log(L"Keyboard hook triggered: Alt/Ctrl+Shift detected.");
                 if (g_instance && g_instance->GetHwnd())
                 {
                     g_instance->SetWaitingForClick();
@@ -77,10 +79,12 @@ LangIndicator::LangIndicator(const Config* cfg)
 
 LangIndicator::~LangIndicator()
 {
+    Log(L"LangIndicator destructor called.");
     if (hwnd_) DestroyWindow(hwnd_);
 
     if (g_kbHook)
     {
+        Log(L"Unhooking low-level keyboard hook.");
         UnhookWindowsHookEx(g_kbHook);
         g_kbHook = nullptr;
     }
@@ -100,22 +104,34 @@ bool LangIndicator::Init(HINSTANCE hInstance)
     wc.hInstance = hInst_;
     wc.lpszClassName = L"LangIndicatorWindow";
     RegisterClassW(&wc);
+    Log(L"Window class registered.");
 
     hwnd_ = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOOLWINDOW, wc.lpszClassName, nullptr, WS_POPUP,CW_USEDEFAULT, CW_USEDEFAULT,
                             cfg_->width, cfg_->height, nullptr, nullptr, hInst_, this);
-    if (!hwnd_) return false;
+    if (!hwnd_)
+    {
+        Log(L"ERROR: CreateWindowExW failed.");
+        return false;
+    }
+    Log(L"Window created successfully.");
 
     SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     HRGN rgn = CreateRoundRectRgn(0, 0, cfg_->width + 1, cfg_->height + 1, 20, 20);
-    SetWindowRgn(hwnd_, rgn, TRUE); // hwnd_ — your window handle
+    SetWindowRgn(hwnd_, rgn, TRUE); 
     ShowWindow(hwnd_, SW_HIDE);
     RegisterRawInput();
+    Log(L"Raw input registered.");
     // Installing a global WH_KEYBOARD_LL hook for Alt+Shift/Ctrl+Shift
     g_kbHook = SetWindowsHookExW(WH_KEYBOARD_LL,LowLevelKeyboard, hInst_, 0 );
-    // optional: nullptr check
-    // if (!g_kbHook) { /* log the error */ }
+    if (!g_kbHook) {
+        Log(L"ERROR: SetWindowsHookExW for keyboard failed. GetLastError() = " + std::to_wstring(GetLastError()));
+    }
+    else {
+        Log(L"Successfully set low-level keyboard hook.");
+    }
     UpdateLayout();
     taskbarCreatedMsg_ = RegisterWindowMessageW(L"TaskbarCreated");
+    Log(L"Registered TaskbarCreated message.");
     return true;
 }
 
@@ -141,6 +157,7 @@ void LangIndicator::RegisterRawInput()
 
 void LangIndicator::ShowIndicator()
 {
+    Log(L"ShowIndicator called.");
     UpdateLayout();
     currentAlpha_ = 0;
     phase_ = Phase::FadeIn;
@@ -257,6 +274,7 @@ __declspec(noinline)
 
 void LangIndicator::ShowIndicatorAtCaret()
 {
+    Log(L"ShowIndicatorAtCaret called.");
     UpdateLayout();
     currentAlpha_ = 0;
     phase_ = Phase::FadeIn;
@@ -264,13 +282,15 @@ void LangIndicator::ShowIndicatorAtCaret()
     // 1) get the screen position of the caret
     POINT pt = this->FindCaretPosition();
     
-    // If we got zero coordinates, use center of the screen
+    // If we got zero coordinates, use the mouse cursor position as a fallback
     if (pt.x == 0 && pt.y == 0)
     {
-        int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-        int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-        pt.x = (screenWidth - cfg_->width) / 2;
-        pt.y = (screenHeight - cfg_->height) / 2;
+        Log(L"FindCaretPosition returned {0,0}. Using mouse cursor position as fallback.");
+        GetCursorPos(&pt);
+    }
+    else
+    {
+        Log(L"FindCaretPosition returned: x=" + std::to_wstring(pt.x) + L", y=" + std::to_wstring(pt.y));
     }
     
     // 2) position the window near the carriage
@@ -308,6 +328,7 @@ POINT LangIndicator::FindCaretPosition()
         return pt;
     }
     
+    Log(L"GetGUIThreadInfo failed or hwndCaret is null.");
     // Return zero point if we can't get caret position
     return { 0, 0 };
 }
@@ -317,6 +338,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     auto self = reinterpret_cast<LangIndicator*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     if (self && msg == self->taskbarCreatedMsg_)
     {
+        Log(L"TaskbarCreated message received.");
         self->ShowIndicatorAtCaret();
         return 0;
     }
@@ -336,6 +358,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
                 {
                     if (self && self->waitingForClick_)
                     {
+                        Log(L"Mouse click detected, showing indicator.");
                         self->waitingForClick_ = false;
                         PostMessageW(self->hwnd_, WM_SHOW_INDICATOR, 0, 0);
                     }
@@ -350,6 +373,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         {   // 1) delayed window launch at the caret
             if (wp == DELAY_TIMER_ID)
             {
+                Log(L"Delay timer fired. Showing indicator at caret.");
                 KillTimer(self->hwnd_, DELAY_TIMER_ID);
                 self->ShowIndicatorAtCaret();
                 return 0;
@@ -388,6 +412,7 @@ LRESULT CALLBACK LangIndicator::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
     case WM_DESTROY:
+        Log(L"WM_DESTROY received. Posting quit message.");
         PostQuitMessage(0);
         return 0;
 

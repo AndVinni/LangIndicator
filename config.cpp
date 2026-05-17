@@ -53,6 +53,7 @@ void Config::LoadOrCreate()
         initialAlpha = 128; /*displayTimeMs = 100;*/
         fadeIntervalMs = 2; alphaStep = 5;
         bgColor = L"#000000"; textColor = L"#FFFFFF";
+        logging = false;
         std::wofstream f(cfgPath, std::ios::binary);
         // To remove startup: langindicator.exe -u
         f << L"//To delete auto-upload: langindicator.exe -u\n";
@@ -65,7 +66,8 @@ void Config::LoadOrCreate()
             << L"  \"fadeIntervalMs\": " << fadeIntervalMs << L",\n"
             << L"  \"alphaStep\": " << alphaStep << L",\n"
             << L"  \"bgColor\": \"" << bgColor << L"\",\n"
-            << L"  \"textColor\": \"" << textColor << L"\"\n"
+            << L"  \"textColor\": \"" << textColor << L"\",\n"
+            << L"  \"logging\": " << (logging ? L"true" : L"false") << L"\n"
             << L"}\n";
         return;
     }
@@ -75,6 +77,14 @@ void Config::LoadOrCreate()
     auto getInt = [&](std::wstring key) { size_t p = s.find(key); if (p == std::wstring::npos) return 0; return _wtoi(s.c_str() + s.find(L":", p) + 1); };
     auto getByte = [&](std::wstring key) { return static_cast<BYTE>(getInt(key)); };
     auto getStr = [&](std::wstring key) { size_t p = s.find(key); if (p == std::wstring::npos) return std::wstring(); p = s.find(L'"', p + key.size()) + 1; size_t e = s.find(L'"', p); return s.substr(p, e - p); };
+    auto getBool = [&](const std::wstring& key) {
+        size_t p = s.find(key);
+        if (p == std::wstring::npos) return false;
+        p = s.find(L":", p) + 1;
+        while (p < s.length() && iswspace(s[p])) { p++; }
+        return s.substr(p, 4) == L"true";
+    };
+
     width = getInt(L"\"width\"");
     height = getInt(L"\"height\"");
     fontSize = getInt(L"\"fontSize\"");
@@ -83,6 +93,7 @@ void Config::LoadOrCreate()
     alphaStep = getByte(L"\"alphaStep\"");
     bgColor = getStr(L"\"bgColor\"");
     textColor = getStr(L"\"textColor\"");
+    logging = getBool(L"\"logging\"");
 }
 
 // Removes an entry from startup

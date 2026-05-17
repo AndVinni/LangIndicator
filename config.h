@@ -18,6 +18,7 @@ struct Config
     BYTE alphaStep;
     std::wstring bgColor;
     std::wstring textColor;
+    bool logging;
 
     void LoadOrCreate();
 };
